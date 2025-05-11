@@ -14,20 +14,24 @@ import com.ecommerce.project.repositories.ProductRepository;
 import com.ecommerce.project.service.Cart.CartService;
 import com.ecommerce.project.service.File.FileService;
 import jakarta.transaction.Transactional;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.function.Function;
 
+@Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
     private final CategoryRepository categoryRepository;
@@ -36,6 +40,9 @@ public class ProductServiceImpl implements ProductService {
     private final FileService fileService;
     private final CartRepository cartRepository;
     private final CartService cartService;
+
+    @Value("${image.base.url}")
+    private String imageBaseUrl;
 
     @Override
     public ProductDTO addProduct(Long categoryId, ProductDTO productDTO) {
@@ -67,9 +74,29 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductResponse getAllProducts(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
-        Function<Pageable, Page<Product>> fetchProductsFn = productRepository::findAll;
+    public ProductResponse getAllProducts(String keyword, String category, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
+
+        Specification<Product> spec = Specification.where(null);
+        if (keyword != null && !keyword.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(
+                            criteriaBuilder.lower(
+                                    root.get("productName")), "%" + keyword.toLowerCase() + "%"));
+        }
+
+        if (category != null && !category.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(root.get("category").get("categoryName"), category));
+        }
+
+        final Specification<Product> finalSpec = spec;
+        Function<Pageable, Page<Product>> fetchProductsFn =
+                pageDetails -> productRepository.findAll(finalSpec, pageDetails);
         return getProductResponse(pageNumber, pageSize, sortBy, sortOrder, fetchProductsFn);
+    }
+
+    private String constructImageUrl(String imageName) {
+        return imageBaseUrl.endsWith("/") ? imageBaseUrl + imageName : imageBaseUrl + "/" + imageName;
     }
 
     @Override
@@ -157,7 +184,11 @@ public class ProductServiceImpl implements ProductService {
         }
 
         List<ProductDTO> productDTOS = products.stream()
-                .map(p -> modelMapper.map(p, ProductDTO.class))
+                .map(p -> {
+                    ProductDTO dto = modelMapper.map(p, ProductDTO.class);
+                    dto.setImage(constructImageUrl(p.getImage()));
+                    return dto;
+                })
                 .toList();
 
         ProductResponse productResponse = new ProductResponse();
