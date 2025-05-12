@@ -32,7 +32,6 @@ import java.util.Set;
 
 @Configuration
 @EnableWebSecurity
-//@EnableMethodSecurity
 @AllArgsConstructor
 public class WebSecurityConfig {
 
@@ -79,6 +78,7 @@ public class WebSecurityConfig {
                                 .requestMatchers("/h2-console/**").permitAll()
                                 .requestMatchers("/api/admin/**").permitAll()
                                 .requestMatchers("/api/public/**").permitAll()
+                                .requestMatchers("/api/order/**").permitAll()
                                 .requestMatchers("/swagger-ui/**").permitAll()
                                 .requestMatchers("/api/test/**").permitAll()
                                 .requestMatchers("/images/**").permitAll()
@@ -91,25 +91,8 @@ public class WebSecurityConfig {
         http.headers(headers ->
                 headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
-        /*http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable);*/
-
         return http.build();
     }
-
-    /*@Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        var corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowCredentials(true);
-        corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173"));
-        corsConfiguration.setAllowedHeaders(Arrays.asList(ORIGIN, ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_TYPE, ACCEPT, AUTHORIZATION, ACCESS_CONTROL_REQUEST_METHOD, ACCESS_CONTROL_REQUEST_HEADERS, ACCESS_CONTROL_ALLOW_CREDENTIALS, FILE_NAME));
-        corsConfiguration.setExposedHeaders(Arrays.asList(ORIGIN, ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_TYPE, ACCEPT, AUTHORIZATION, ACCESS_CONTROL_REQUEST_METHOD, ACCESS_CONTROL_REQUEST_HEADERS, ACCESS_CONTROL_ALLOW_CREDENTIALS, FILE_NAME));
-        corsConfiguration.setAllowedMethods(Arrays.asList(GET.name(), POST.name(), PUT.name(), PATCH.name(), DELETE.name(), OPTIONS.name()));
-        corsConfiguration.setMaxAge(3600L);
-        var source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", corsConfiguration);
-        return source;
-    }*/
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {

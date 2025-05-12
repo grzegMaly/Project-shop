@@ -32,9 +32,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderDTO placeOrder(String emailId, Long addressId, String paymentMethod, String pgName,
-                               String pgPaymentId, String pgStatus, String pgResponseMessage) {
-
+    public OrderDTO placeOrder(String emailId, Long addressId, String paymentMethod, String pgName, String pgPaymentId, String pgStatus, String pgResponseMessage) {
         Cart cart = cartRepository.findCartByEmail(emailId);
         if (cart == null) {
             throw new ResourceNotFoundException("Cart", "email", emailId);
@@ -47,7 +45,7 @@ public class OrderServiceImpl implements OrderService {
         order.setEmail(emailId);
         order.setOrderDate(LocalDate.now());
         order.setTotalAmount(cart.getTotalPrice());
-        order.setOrderStatus("Order Accepted!");
+        order.setOrderStatus("Order Accepted !");
         order.setAddress(address);
 
         Payment payment = new Payment(paymentMethod, pgPaymentId, pgStatus, pgResponseMessage, pgName);
@@ -79,9 +77,13 @@ public class OrderServiceImpl implements OrderService {
             int quantity = item.getQuantity();
             Product product = item.getProduct();
 
+            // Reduce stock quantity
             product.setQuantity(product.getQuantity() - quantity);
+
+            // Save product back to the database
             productRepository.save(product);
 
+            // Remove items from cart
             cartService.deleteProductFromCart(cart.getCartId(), item.getProduct().getProductId());
         });
 
@@ -89,6 +91,7 @@ public class OrderServiceImpl implements OrderService {
         orderItems.forEach(item -> orderDTO.getOrderItems().add(modelMapper.map(item, OrderItemDTO.class)));
 
         orderDTO.setAddressId(addressId);
+
         return orderDTO;
     }
 }
